@@ -2,7 +2,7 @@ import multer from "multer";
 import { supabase } from "../utils/supabaseClient.js";
 import Recipe from '../model/recipeModel.js';
 import { errorHandler } from "../utils/error.js";
-import ollama from "ollama";
+import { groq } from "../utils/groqClient.js";
 import mongoose from "mongoose";
 
 const storage = multer.memoryStorage();
@@ -137,14 +137,15 @@ export const searchRecipesAI = async (req, res, next) => {
     `;
 
     // Step 4: Query AI model
-    const response = await ollama.chat({
-      model: "mistral:latest",
+    const completion = await groq.chat.completions.create({
+      model: "llama-3.1-8b-instant",
       messages: [{ role: "user", content: prompt }],
+      temperature: 0,
     });
 
     let matchedIds = [];
     try {
-      const rawContent = response.message.content.trim();
+      const rawContent = completion.choices[0].message.content.trim();
 
       // Extract first valid JSON array
       const match = rawContent.match(/\[.*\]/s);
