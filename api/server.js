@@ -16,7 +16,7 @@ import savedRoutes from './routes/savedRoutes.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-dotenv.config({ path: resolve(__dirname, '../.env') });
+dotenv.config();
 
 mongoose.connect(process.env.MONGO_URL).then(() => {
   console.log('MongoDB is connected');
