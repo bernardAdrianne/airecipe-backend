@@ -69,7 +69,6 @@ export const getRecipesByCategory = async (req, res, next) => {
     next(errorHandler(500, 'Failed to fetch recipes by category'));
   }
 };
-
 export const searchRecipesAI = async (req, res, next) => {
   const { ingredient } = req.query;
   if (!ingredient) {
@@ -77,17 +76,43 @@ export const searchRecipesAI = async (req, res, next) => {
   }
 
   try {
-    const ingredients = ingredient.split(",").map(i => i.trim()).filter(Boolean);
+    // Normalize and clean user input
+    const ingredients = ingredient
+      .split(",")
+      .map(i => i.trim().toLowerCase())
+      .filter(Boolean);
 
-    const regexArray = ingredients.map(i => ({ ingredients: { $regex: new RegExp(i, "i") } }));
-    const dbMatches = await Recipe.find({ $and: regexArray });
+    // Step 1: Find recipes containing ANY of the searched ingredients
+    const dbMatches = await Recipe.find({
+      ingredients: { $in: ingredients.map(i => new RegExp(i, "i")) }
+    });
 
     if (dbMatches.length === 0) {
       return res.status(404).json({ message: "No recipes found with those ingredients" });
     }
 
-    // Prepare data for AI ranking
-    const recipeData = dbMatches.map(r => ({
+    const scoredRecipes = dbMatches.map(recipe => {
+      const recipeIngredients = recipe.ingredients.map(rIng => rIng.toLowerCase());
+
+      const matchCount = ingredients.filter(ing =>
+        recipeIngredients.some(rIng => rIng.includes(ing))
+      ).length;
+
+      const missingCount = recipeIngredients.length - matchCount;
+
+      // Higher is better
+      const score = matchCount - missingCount * 0.5;
+
+      return { recipe, score, matchCount, missingCount };
+    });
+
+    // Sort locally before sending to AI
+    scoredRecipes.sort((a, b) => b.score - a.score);
+
+    // Step 3: Prepare data for AI reranking (limit to top 15 for performance)
+    const topRecipes = scoredRecipes.slice(0, 15).map(r => r.recipe);
+
+    const recipeData = topRecipes.map(r => ({
       id: r._id,
       title: r.title,
       ingredients: r.ingredients,
@@ -96,15 +121,22 @@ export const searchRecipesAI = async (req, res, next) => {
 
     const prompt = `
       The user searched for: "${ingredients.join(", ")}".
-      Here are possible recipes:
-      ${JSON.stringify(recipeData, null, 2)}
 
-      Task:
-      - Rank the recipes from most relevant to least relevant.
-      - Return ONLY an array of recipe IDs in JSON.
-      Example: ["65d8f2...", "65d8f3..."]
+      Rules for ranking recipes:
+      1. Recipes with more exact ingredient matches rank higher.
+      2. Penalize recipes that require many additional ingredients not provided by the user.
+      3. Prefer simpler recipes (fewer total ingredients) if match counts are the same.
+
+      Output Instructions:
+      - Return ALL candidate recipe IDs, sorted best to worst.
+      - Return ONLY a valid JSON array, no extra text.
+      - Example: ["65d8f2...", "65d8f3...", "65d8f4..."]
+
+      Candidate recipes:
+      ${JSON.stringify(recipeData, null, 2)}
     `;
 
+    // Step 4: Query AI model
     const response = await ollama.chat({
       model: "mistral:latest",
       messages: [{ role: "user", content: prompt }],
@@ -114,7 +146,7 @@ export const searchRecipesAI = async (req, res, next) => {
     try {
       const rawContent = response.message.content.trim();
 
-      // Extract the first valid JSON array from AI response
+      // Extract first valid JSON array
       const match = rawContent.match(/\[.*\]/s);
       if (match) {
         matchedIds = JSON.parse(match[0]);
@@ -122,21 +154,25 @@ export const searchRecipesAI = async (req, res, next) => {
         throw new Error("No valid JSON array found in AI response");
       }
     } catch (err) {
-      console.warn("AI ranking failed, returning DB matches directly:", err.message);
-      return res.status(200).json({ results: dbMatches });
+      console.warn("AI ranking failed, using local ranking only:", err.message);
+      return res.status(200).json({ results: topRecipes });
     }
 
-    // Reorder results by AI ranking
+    // Step 5: Reorder results based on AI ranking
     const rankedRecipes = matchedIds
-      .map(id => dbMatches.find(r => r._id.toString() === id))
+      .map(id => topRecipes.find(r => r._id.toString() === id))
       .filter(Boolean);
 
-    // If AI returned weird IDs, fallback to DB matches
-    if (rankedRecipes.length === 0) {
-      return res.status(200).json({ results: dbMatches });
+    // Add any recipes AI forgot to mention (least relevant at the end)
+    const missingRecipes = topRecipes.filter(r => !rankedRecipes.includes(r));
+    const finalResults = [...rankedRecipes, ...missingRecipes];
+
+    // Fallback if AI gave wrong IDs (finalResults would still include everything)
+    if (finalResults.length === 0) {
+      return res.status(200).json({ results: topRecipes });
     }
 
-    res.status(200).json({ results: rankedRecipes });
+    res.status(200).json({ results: finalResults });
   } catch (err) {
     console.error("AI search error:", err);
     next(errorHandler(500, "AI search failed"));
