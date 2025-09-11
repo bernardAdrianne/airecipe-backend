@@ -29,7 +29,7 @@ const app = express();
 
 // ✅ Now use middlewares
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: 'https://recipe-frontend-eta-five.vercel.app',
   credentials: true
 }));
 
