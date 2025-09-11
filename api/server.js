@@ -29,7 +29,7 @@ const app = express();
 
 // ✅ Now use middlewares
 app.use(cors({
-  origin: 'https://recipe-frontend-eta-five.vercel.app',
+  origin: 'https://recipe-frontend-oqiurq08x-gordon-college.vercel.app',
   credentials: true
 }));
 
