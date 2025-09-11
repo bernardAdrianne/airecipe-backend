@@ -2,7 +2,7 @@ import multer from "multer";
 import { supabase } from "../utils/supabaseClient.js";
 import Recipe from '../model/recipeModel.js';
 import { errorHandler } from "../utils/error.js";
-import { client as groq } from "../utils/aiClient.js";
+import { groq } from "../utils/groqClient.js";
 import mongoose from "mongoose";
 
 const storage = multer.memoryStorage();
