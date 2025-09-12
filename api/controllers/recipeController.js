@@ -82,7 +82,7 @@ export const searchRecipesAI = async (req, res, next) => {
       .map(i => i.trim().toLowerCase())
       .filter(Boolean);
 
-    // Step 1: Find recipes containing ANY of the searched ingredients
+    // Find recipes containing ANY of the searched ingredients
     const dbMatches = await Recipe.find({
       ingredients: { $in: ingredients.map(i => new RegExp(i, "i")) }
     });
@@ -109,7 +109,7 @@ export const searchRecipesAI = async (req, res, next) => {
     // Sort locally before sending to AI
     scoredRecipes.sort((a, b) => b.score - a.score);
 
-    // Step 3: Prepare data for AI reranking (limit to top 15 for performance)
+    // Prepare data for AI reranking (limit to top 15 for performance)
     const topRecipes = scoredRecipes.slice(0, 15).map(r => r.recipe);
 
     const recipeData = topRecipes.map(r => ({
@@ -136,7 +136,7 @@ export const searchRecipesAI = async (req, res, next) => {
       ${JSON.stringify(recipeData, null, 2)}
     `;
 
-    // Step 4: Query AI model
+    // Query AI model
     const completion = await groq.chat.completions.create({
       model: "llama-3.1-8b-instant",
       messages: [{ role: "user", content: prompt }],
@@ -159,7 +159,7 @@ export const searchRecipesAI = async (req, res, next) => {
       return res.status(200).json({ results: topRecipes });
     }
 
-    // Step 5: Reorder results based on AI ranking
+    // Reorder results based on AI ranking
     const rankedRecipes = matchedIds
       .map(id => topRecipes.find(r => r._id.toString() === id))
       .filter(Boolean);
