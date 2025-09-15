@@ -32,7 +32,8 @@ app.use(cors({
   origin: [
     'https://recipe-frontend-oqiurq08x-gordon-college.vercel.app',
     'https://recipe-frontend-eta-five.vercel.app',
-    'https://recipe-frontend-divwv579n-gordon-college.vercel.app'
+    'https://recipe-frontend-divwv579n-gordon-college.vercel.app',
+    'http://localhost:3000'
   ],
   credentials: true
 }));
@@ -62,10 +63,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}!`);
 });
-
-
-//MONGO_URL=mongodb+srv://recipe:Benedicto123@cluster0.c9mhyk0.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
-// JWT_SECRET=reciperecommendationpassword
-
-// SUPABASE_URL=https://sfoyguywhcyqnxpvdexr.supabase.co
-// SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmb3lndXl3aGN5cW54cHZkZXhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg3MTkwNzEsImV4cCI6MjA2NDI5NTA3MX0.gQh5Sp_tYF0XrWKgwEfhbaZJm7PTLYHay82gzi5kmzs
