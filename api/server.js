@@ -9,6 +9,7 @@ import { dirname, resolve } from 'path';
 
 // Routes
 import authRoutes from './routes/authRoutes.js';
+import feedbackRoutes from './routes/feedbackRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import recipeRoutes from './routes/recipeRoutes.js';
 import savedRoutes from './routes/savedRoutes.js';
@@ -30,10 +31,10 @@ const app = express();
 // Enable CORS
 app.use(cors({
   origin: [
+    'http://localhost:5173',
     'https://recipe-frontend-oqiurq08x-gordon-college.vercel.app',
     'https://recipe-frontend-eta-five.vercel.app',
     'https://recipe-frontend-divwv579n-gordon-college.vercel.app',
-    'http://localhost:3000'
   ],
   credentials: true
 }));
@@ -43,6 +44,7 @@ app.use(cookieParser());
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/feedback', feedbackRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/recipe', recipeRoutes);
 app.use('/api/', savedRoutes);

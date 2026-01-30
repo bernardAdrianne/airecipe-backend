@@ -21,7 +21,21 @@ const recipeSchema = new mongoose.Schema({
     type: String,
     enum: ['Breakfast', 'Lunch', 'Dinner', 'Dessert'],
     required: true,
+  },
+   difficulty: {
+    type: String,
+    enum: ['Easy', 'Medium', 'Hard'],
+    default: 'Easy'
+  },
+  description: {
+    type: String,
+    default: ''
+  },
+  estimatedTime: {
+    type: String, 
+    default: 0
   }
+
 }, { timestamps: true });
 
 const Recipe = mongoose.model("Recipe", recipeSchema);

@@ -2,6 +2,7 @@ import User from "../model/userModel.js";
 import bcryptjs from 'bcryptjs';
 import jwt from "jsonwebtoken";
 import { errorHandler } from "../utils/error.js";
+import { getRequest } from "@sveltejs/kit/node";
 
 export const signup = async (req, res, next) => {
     const { username, email, password } = req.body;
@@ -59,10 +60,12 @@ export const signin = async (req, res, next) => {
 
         const { password: pass, ...rest } = validUser._doc;
 
-        res.status(200).cookie('access_token', token, {
+        res.status(200)
+        .clearCookie("guest_search_count")
+        .cookie('access_token', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "none",
+            secure: false,//process.env.NODE_ENV === "production",
+            sameSite: "lax",
         }).json(rest);
     } catch(error) {
         next(error);
@@ -72,7 +75,33 @@ export const signin = async (req, res, next) => {
 export const logout = async (req, res) => {
     res.clearCookie("access_token", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "none",
+    secure: false,
+    sameSite: "lax",
 }).status(200).json({ message: "Logout successfully" });
+};
+
+export const checkSession = async (req, res) => {
+  try {
+    const token = req.cookies?.access_token;
+
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        return res.status(200).json({
+          authenticated: true,
+          user: { id: decoded.id },
+        });
+      } catch (err) {
+        return res.status(401).json({
+          authenticated: false,
+          message: "Invalid or expired token",
+        });
+      }
+    }
+
+    return res.status(401).json({ authenticated: false });
+  } catch (err) {
+    console.error("Error in checkSession:", err);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
 };
