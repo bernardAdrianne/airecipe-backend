@@ -63,7 +63,7 @@ export const signin = async (req, res, next) => {
         .clearCookie("guest_search_count")
         .cookie('access_token', token, {
             httpOnly: true,
-            secure: false,//process.env.NODE_ENV === "production",
+            secure: process.env.NODE_ENV === "production", //false
             sameSite: "lax",
         }).json(rest);
     } catch(error) {
