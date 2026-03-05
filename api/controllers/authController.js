@@ -62,12 +62,12 @@ export const signin = async (req, res, next) => {
         res.status(200)
         .clearCookie("guest_search_count")
         .cookie('access_token', token, {
-            // httpOnly: true,
-            // secure: process.env.NODE_ENV === "production", //false
-            // sameSite: "lax",
             httpOnly: true,
-            secure: true,
-            sameSite: "none",
+            secure: process.env.NODE_ENV === "production", //false
+            sameSite: "lax",
+            // httpOnly: true,
+            // secure: true,
+            // sameSite: "none",
         }).json(rest);
     } catch(error) {
         next(error);
@@ -76,9 +76,9 @@ export const signin = async (req, res, next) => {
 
 export const logout = async (req, res) => {
     res.clearCookie("access_token", {
-    httpOnly: true,
-    secure: true,
-    sameSite: "none",
+        httpOnly: true,
+        secure: true,
+        sameSite: "none",
 }).status(200).json({ message: "Logout successfully" });
 };
 
